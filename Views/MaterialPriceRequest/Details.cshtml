@@ -1,0 +1,269 @@
+﻿@* Views/MaterialPriceRequest/Details.cshtml *@
+@model NCRManagementSystem.Models.ViewModels.MaterialPriceRequestDetailViewModel
+@{
+    ViewData["Title"] = $"รายละเอียด {Model.Request.RequestNumber}";
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">@Model.Request.RequestNumber</h5>
+                <span class="badge @Model.Request.StatusBadgeClass fs-6">@Model.Request.StatusDisplay</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>วันที่ร้องขอ:</strong><br>
+                        @Model.Request.RequestDate.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                    <div class="col-md-4">
+                        <strong>ผู้ร้องขอ:</strong><br>
+                        @Model.Request.RequestByName
+                    </div>
+                    <div class="col-md-4">
+                        <strong>แผนก:</strong><br>
+                        @(Model.Request.Department ?? "-")
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.Request.Remarks))
+                {
+                    <div class="mb-3">
+                        <strong>หมายเหตุ:</strong>
+                        <p class="mb-0">@Model.Request.Remarks</p>
+                    </div>
+                }
+
+                <hr>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">รายการวัตถุดิบ (@Model.Request.TotalItems รายการ)</h6>
+                    <div>
+                        <span class="badge bg-success">ได้ราคาแล้ว: @Model.Request.PricedItems</span>
+                        <span class="badge bg-warning">รอราคา: @Model.Request.PendingItems</span>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Plant</th>
+                                <th>รหัส</th>
+                                <th>ชื่อวัตถุดิบ</th>
+                                <th>จำนวน</th>
+                                <th>ราคา</th>
+                                <th>Supplier</th>
+                                <th>สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var (item, index) in Model.Request.Items.Select((item, index) => (item, index)))
+                            {
+                                <tr class="@(item.IsOverdue ? "table-danger" : "")">
+                                    <td>@(index + 1)</td>
+                                    <td>@item.Plant</td>
+                                    <td>@item.MaterialCode</td>
+                                    <td>
+                                        @item.MaterialName
+                                        @if (!string.IsNullOrEmpty(item.Remark))
+                                        {
+                                            <br>
+                                    
+                                            <small class="text-muted">@item.Remark</small>
+                                        }
+                                        @if (item.Files.Any())
+                                        {
+                                            <div class="mt-1">
+                                                @foreach (var file in item.Files)
+                                                {
+                                                    <a href="@Url.Action("DownloadFile", new { fileId = file.FileId })"
+                                                       class="badge bg-secondary me-1" target="_blank">
+                                                        <i class="fas fa-image"></i> @file.OriginalFileName
+                                                    </a>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>@(item.Quantity?.ToString("N2") ?? "-") @item.Unit</td>
+                                    <td>
+                                        @if (item.UnitPrice.HasValue)
+                                        {
+                                            <strong class="text-success">@item.UnitPrice.Value.ToString("N2") @item.Currency</strong>
+                                            @if (item.LeadTimeDays.HasValue)
+                                            {
+                                                <br>
+                                    
+                                                <small>Lead: @item.LeadTimeDays วัน</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>@(item.SupplierName ?? "-")</td>
+                                    <td>
+                                        <span class="badge @item.StatusBadgeClass">
+                                            @item.StatusDisplay
+                                        </span>
+                                        @if (item.IsOverdue)
+                                        {
+                                            <br>
+                                    
+                                            <small class="text-danger">รอ @item.HoursPending ชม.</small>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Actions -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">การดำเนินการ</h6>
+            </div>
+            <div class="card-body">
+                @if (Model.CanUpdatePrice && Model.Request.Status != "Completed")
+                {
+                    <a href="@Url.Action("UpdatePrice", new { id = Model.Request.RequestId })" class="btn btn-success w-100 mb-2">
+                        <i class="fas fa-dollar-sign me-2"></i>อัพเดตราคา
+                    </a>
+                }
+
+                @if (Model.CanComplete && Model.Request.PricedItems > 0)
+                {
+                    <button class="btn btn-primary w-100 mb-2" onclick="completeRequest()">
+                        <i class="fas fa-check me-2"></i>ปิดงาน
+                    </button>
+                }
+
+                @if (Model.IsRequester && Model.Request.Status == "Pending")
+                {
+                    <button class="btn btn-outline-danger w-100 mb-2" onclick="cancelRequest()">
+                        <i class="fas fa-times me-2"></i>ยกเลิก
+                    </button>
+                }
+
+                <hr>
+
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary w-100">
+                    <i class="fas fa-arrow-left me-2"></i>กลับ
+                </a>
+            </div>
+        </div>
+
+        <!-- History -->
+        @if (Model.Request.History.Any())
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">ประวัติการดำเนินการ</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        @foreach (var history in Model.Request.History.Take(10))
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <div class="fw-medium">@history.Action</div>
+                                    <div class="small text-muted">@history.Description</div>
+                                    <div class="small text-muted">
+                                        @history.ActionDate.ToString("dd/MM/yyyy HH:mm")
+                                        โดย @history.ActionByName
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function completeRequest() {
+            Swal.fire({
+                title: 'ยืนยันปิดงาน',
+                text: 'คุณต้องการปิดงานใบร้องขอนี้หรือไม่?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ปิดงาน',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("Complete", new { id = Model.Request.RequestId })', {}, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function cancelRequest() {
+            Swal.fire({
+                title: 'ยืนยันยกเลิก',
+                text: 'คุณต้องการยกเลิกใบร้องขอนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'ยกเลิกใบร้องขอ',
+                cancelButtonText: 'ไม่ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("Cancel", new { id = Model.Request.RequestId })', {}, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+    </script>
+}
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 20px;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 15px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -25px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #007bff;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: -21px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+
+    .timeline-content {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+    }
+</style>

@@ -153,7 +153,7 @@
         <div class="p-3">
             <a href="@Url.Action("Index", "Dashboard")" class="brand-text text-decoration-none">
                 <i class="fas fa-clipboard-check me-2"></i>
-                NCR System
+                Purchase Requestions
             </a>
         </div>
 
@@ -177,6 +177,14 @@
                    href="@Url.Action("Index", "NCR")">
                     <i class="fas fa-list me-2"></i>
                     รายการ NCR
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "MaterialPriceRequest" ? "active" : "")"
+                   href="@Url.Action("Index", "MaterialPriceRequest")">
+                    <i class="fas fa-tags me-2"></i>
+                    Request Material Price
                 </a>
             </li>
 

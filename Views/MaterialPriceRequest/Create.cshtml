@@ -1,0 +1,226 @@
+﻿@* Views/MaterialPriceRequest/Create.cshtml *@
+@model NCRManagementSystem.Models.ViewModels.MaterialPriceRequestCreateViewModel
+@{
+    ViewData["Title"] = "สร้างใบร้องขอราคาวัตถุดิบ";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">สร้างใบร้องขอราคาวัตถุดิบ</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" enctype="multipart/form-data" id="createForm">
+            @Html.AntiForgeryToken()
+
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">เลขที่ใบร้องขอ</label>
+                    <input asp-for="RequestNumber" class="form-control" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">วันที่</label>
+                    <input type="text" class="form-control" value="@DateTime.Now.ToString("dd/MM/yyyy HH:mm")" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">ผู้ร้องขอ</label>
+                    <input type="text" class="form-control" value="@User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value" readonly>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Remarks" class="form-label">หมายเหตุ</label>
+                <textarea asp-for="Remarks" class="form-control" rows="2" placeholder="หมายเหตุเพิ่มเติม (ถ้ามี)"></textarea>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">รายการวัตถุดิบ</h6>
+                <button type="button" class="btn btn-success btn-sm" onclick="addItem()">
+                    <i class="fas fa-plus me-1"></i>เพิ่มรายการ
+                </button>
+            </div>
+
+            <div id="itemsContainer">
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <div class="item-row card mb-3" data-index="@i">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">รายการที่ @(i + 1)</h6>
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeItem(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-2">
+                                    <label class="form-label">Plant <span class="text-danger">*</span></label>
+                                    <select name="Items[@i].Plant" class="form-select" required>
+                                        <option value="">เลือก</option>
+                                        @foreach (var plant in Model.PlantOptions)
+                                        {
+                                            <option value="@plant.Value">@plant.Text</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">รหัสวัตถุดิบ <span class="text-danger">*</span></label>
+                                    <input name="Items[@i].MaterialCode" class="form-control" required placeholder="Material Code">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">ชื่อวัตถุดิบ <span class="text-danger">*</span></label>
+                                    <input name="Items[@i].MaterialName" class="form-control" required placeholder="Material Name">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">จำนวน</label>
+                                    <input name="Items[@i].Quantity" type="number" step="0.001" class="form-control" placeholder="Qty">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label">หน่วย</label>
+                                    <input name="Items[@i].Unit" class="form-control" placeholder="Unit">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">หมายเหตุ</label>
+                                    <input name="Items[@i].Remark" class="form-control" placeholder="Remark">
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <label class="form-label">แนบรูปภาพ</label>
+                                    <input name="Items[@i].Files" type="file" class="form-control" multiple accept="image/*">
+                                    <small class="text-muted">รองรับไฟล์รูปภาพ JPG, PNG (สามารถเลือกได้หลายไฟล์)</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>บันทึกและส่งให้ฝ่ายจัดซื้อ
+                </button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-2"></i>ยกเลิก
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let itemIndex = @Model.Items.Count;
+
+        function addItem() {
+            const container = document.getElementById('itemsContainer');
+            const plantOptions = `@Html.Raw(string.Join("", Model.PlantOptions.Select(p => $"<option value=\"{p.Value}\">{p.Text}</option>")))`;
+
+            const newItem = document.createElement('div');
+            newItem.className = 'item-row card mb-3';
+            newItem.dataset.index = itemIndex;
+            newItem.innerHTML = `
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="mb-0">รายการที่ ${itemIndex + 1}</h6>
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="removeItem(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <label class="form-label">Plant <span class="text-danger">*</span></label>
+                            <select name="Items[${itemIndex}].Plant" class="form-select" required>
+                                <option value="">เลือก</option>
+                                ${plantOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">รหัสวัตถุดิบ <span class="text-danger">*</span></label>
+                            <input name="Items[${itemIndex}].MaterialCode" class="form-control" required placeholder="Material Code">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">ชื่อวัตถุดิบ <span class="text-danger">*</span></label>
+                            <input name="Items[${itemIndex}].MaterialName" class="form-control" required placeholder="Material Name">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">จำนวน</label>
+                            <input name="Items[${itemIndex}].Quantity" type="number" step="0.001" class="form-control" placeholder="Qty">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label">หน่วย</label>
+                            <input name="Items[${itemIndex}].Unit" class="form-control" placeholder="Unit">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">หมายเหตุ</label>
+                            <input name="Items[${itemIndex}].Remark" class="form-control" placeholder="Remark">
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-12">
+                            <label class="form-label">แนบรูปภาพ</label>
+                            <input name="Items[${itemIndex}].Files" type="file" class="form-control" multiple accept="image/*">
+                            <small class="text-muted">รองรับไฟล์รูปภาพ JPG, PNG (สามารถเลือกได้หลายไฟล์)</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(newItem);
+            itemIndex++;
+            updateItemNumbers();
+        }
+
+        function removeItem(btn) {
+            const itemRow = btn.closest('.item-row');
+            const container = document.getElementById('itemsContainer');
+
+            if (container.children.length <= 1) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่สามารถลบได้',
+                    text: 'ต้องมีอย่างน้อย 1 รายการ'
+                });
+                return;
+            }
+
+            itemRow.remove();
+            updateItemNumbers();
+        }
+
+        function updateItemNumbers() {
+            const items = document.querySelectorAll('.item-row');
+            items.forEach((item, index) => {
+                item.querySelector('h6').textContent = `รายการที่ ${index + 1}`;
+
+                // Update input names
+                item.querySelectorAll('input, select').forEach(input => {
+                    const name = input.name;
+                    if (name) {
+                        input.name = name.replace(/Items\[\d+\]/, `Items[${index}]`);
+                    }
+                });
+            });
+        }
+
+        // Form validation
+        document.getElementById('createForm').addEventListener('submit', function(e) {
+            const items = document.querySelectorAll('.item-row');
+            let hasValidItem = false;
+
+            items.forEach(item => {
+                const code = item.querySelector('[name*="MaterialCode"]').value.trim();
+                if (code) hasValidItem = true;
+            });
+
+            if (!hasValidItem) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ข้อมูลไม่ครบถ้วน',
+                    text: 'กรุณาเพิ่มรายการวัตถุดิบอย่างน้อย 1 รายการ'
+                });
+            }
+        });
+    </script>
+}

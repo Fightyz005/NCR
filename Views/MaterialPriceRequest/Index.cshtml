@@ -1,0 +1,214 @@
+﻿@* Views/MaterialPriceRequest/Index.cshtml *@
+@model NCRManagementSystem.Models.ViewModels.MaterialPriceRequestListViewModel
+@{
+    ViewData["Title"] = "รายการร้องขอราคาวัตถุดิบ";
+}
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card card-stats">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Stats.TotalRequests</h3>
+                <small>ทั้งหมด</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card card-stats-warning">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Stats.PendingRequests</h3>
+                <small>รอดำเนินการ</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card card-stats-info">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Stats.InProgressRequests</h3>
+                <small>กำลังดำเนินการ</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card card-stats-success">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Stats.CompletedRequests</h3>
+                <small>เสร็จสิ้น</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Stats.OverdueItems</h3>
+                <small>รายการเกิน 3 ชม.</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">@Model.Stats.MonthlyRequests</h3>
+                <small>เดือนนี้</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">รายการร้องขอราคาวัตถุดิบ</h5>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Create")" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>สร้างใบร้องขอใหม่
+            </a>
+            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <i class="fas fa-filter me-2"></i>ตัวกรอง
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Filters -->
+        <div class="collapse" id="filterCollapse">
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <form asp-action="Index" method="get">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <input asp-for="SearchTerm" class="form-control" placeholder="ค้นหาเลขที่, รหัสวัตถุดิบ...">
+                            </div>
+                            <div class="col-md-2">
+                                <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select"></select>
+                            </div>
+                            <div class="col-md-2">
+                                <input asp-for="FromDate" type="date" class="form-control" placeholder="จากวันที่">
+                            </div>
+                            <div class="col-md-2">
+                                <input asp-for="ToDate" type="date" class="form-control" placeholder="ถึงวันที่">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i> ค้นหา
+                                </button>
+                            </div>
+                            <div class="col-md-1">
+                                <a href="@Url.Action("Index")" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        @if (Model.Requests.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>เลขที่</th>
+                            <th>วันที่ร้องขอ</th>
+                            <th>ผู้ร้องขอ</th>
+                            <th>จำนวนรายการ</th>
+                            <th>ความคืบหน้า</th>
+                            <th>สถานะ</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Requests)
+                        {
+                            <tr>
+                                <td>
+                                    <a href="@Url.Action("Details", new { id = item.RequestId })" class="text-decoration-none fw-bold">
+                                        @item.RequestNumber
+                                    </a>
+                                </td>
+                                <td>@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@item.RequestByName</td>
+                                <td>@item.TotalItems รายการ</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        @{
+                                            var percentage = item.TotalItems > 0 ? (item.PricedItems * 100 / item.TotalItems) : 0;
+                                        }
+                                        <div class="progress-bar @(percentage == 100 ? "bg-success" : "bg-info")"
+                                             role="progressbar" style="width: @percentage%">
+                                            @item.PricedItems/@item.TotalItems
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span>
+                                    @if (item.HasOverdueItems)
+                                    {
+                                        <span class="badge bg-danger ms-1">
+                                            <i class="fas fa-clock"></i> เกินเวลา
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Details", new { id = item.RequestId })"
+                                           class="btn btn-outline-primary" title="ดูรายละเอียด">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if ((User.IsInRole("Purchasing") || User.IsInRole("Admin")) && item.Status != "Completed" && item.Status != "Cancelled")
+                                        {
+                                            <a href="@Url.Action("UpdatePrice", new { id = item.RequestId })"
+                                               class="btn btn-outline-success" title="อัพเดตราคา">
+                                                <i class="fas fa-dollar-sign"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = Model.PageNumber - 1, search = Model.SearchTerm, status = Model.Status })">
+                                ก่อนหน้า
+                            </a>
+                        </li>
+                        @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = i, search = Model.SearchTerm, status = Model.Status })">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = Model.PageNumber + 1, search = Model.SearchTerm, status = Model.Status })">
+                                ถัดไป
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">ไม่พบรายการ</h5>
+                <p class="text-muted">ลองปรับเปลี่ยนเงื่อนไขการค้นหาหรือสร้างใบร้องขอใหม่</p>
+                <a href="@Url.Action("Create")" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>สร้างใบร้องขอใหม่
+                </a>
+            </div>
+        }
+    </div>
+</div>
