@@ -1,0 +1,293 @@
+﻿@model NCRManagementSystem.Models.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "แดชบอร์ด";
+}
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card card-stats">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">NCR ทั้งหมด</h5>
+                        <h2 class="mb-0">@Model.Stats.TotalNCRs</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-clipboard-list fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">NCR ที่เปิดอยู่</h5>
+                        <h2 class="mb-0">@Model.Stats.OpenNCRs</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">NCR ที่ปิดแล้ว</h5>
+                        <h2 class="mb-0">@Model.Stats.ClosedNCRs</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-check-circle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card card-stats-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">เดือนนี้</h5>
+                        <h2 class="mb-0">@Model.Stats.MonthlyNCRs</h2>
+                    </div>
+                    <div>
+                        <i class="fas fa-calendar-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent NCRs -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">NCR ล่าสุด</h5>
+                <a href="@Url.Action("Index", "NCR")" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>ดูทั้งหมด
+                </a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentNCRs.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>เลข NCR</th>
+                                    <th>สินค้า</th>
+                                    <th>Supplier</th>
+                                    <th>เกรด</th>
+                                    <th>สถานะ</th>
+                                    <th>วันที่แจ้ง</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var ncr in Model.RecentNCRs)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a href="@Url.Action("Details", "NCR", new { id = ncr.NCRId })"
+                                               class="text-decoration-none fw-bold">@ncr.NCRNumber</a>
+                                        </td>
+                                        <td>@ncr.ProductName</td>
+                                        <td>@ncr.SupplierName</td>
+                                        <td>
+                                            <span class="badge badge-grade-@ncr.Grade.ToLower()">@ncr.Grade</span>
+                                        </td>
+                                        <td>
+                                            <span class="status-@ncr.Status.ToLower()">
+                                                <i class="fas fa-circle"></i>
+                                                @switch (ncr.Status)
+                                                {
+                                                    case "New":
+                                                        @Html.Raw("ใหม่")
+                                                        ; break;
+                                                    case "Sent":
+                                                        @Html.Raw("ส่งแล้ว")
+                                                        ; break;
+                                                    case "Replied":
+                                                        @Html.Raw("ตอบกลับแล้ว")
+                                                        ; break;
+                                                    case "Approved":
+                                                        @Html.Raw("อนุมัติแล้ว")
+                                                        ; break;
+                                                    case "Closed":
+                                                        @Html.Raw("ปิดงาน")
+                                                        ; break;
+                                                    default:
+                                                        @ncr.Status
+                                                        ; break;
+                                                }
+                                            </span>
+                                        </td>
+                                        <td>@ncr.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">ไม่มี NCR ล่าสุด</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart and Pending Tasks -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">สถิติเกรด NCR</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="gradeChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        @if (Model.PendingTasks.Any())
+        {
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">งานที่รอการดำเนินการ</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var task in Model.PendingTasks.Take(5))
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 @(task.IsOverdue ? "bg-danger bg-opacity-10" : "bg-light") rounded">
+                            <div>
+                                <a href="@Url.Action("Details", "NCR", new { id = task.NCRId })"
+                                   class="text-decoration-none fw-bold">@task.NCRNumber</a>
+                                <br>
+                                <small class="text-muted">@task.ProductName</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge badge-grade-@task.Grade.ToLower()">@task.Grade</span>
+                                <br>
+                                @if (task.DaysRemaining.HasValue)
+                                {
+                                    if (task.IsOverdue)
+                                    {
+                                        <small class="text-danger">เกิน @Math.Abs(task.DaysRemaining.Value) วัน</small>
+                                    }
+                                    else
+                                    {
+                                        <small class="text-warning">เหลือ @task.DaysRemaining.Value วัน</small>
+                                    }
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.PendingTasks.Count > 5)
+                    {
+                        <div class="text-center mt-3">
+                            <small class="text-muted">และอีก @(Model.PendingTasks.Count - 5) รายการ</small>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Initialize grade chart
+            const ctx = document.getElementById('gradeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['เกรด A', 'เกรด B', 'เกรด C'],
+                    datasets: [{
+                        data: [@Model.Stats.GradeACount, @Model.Stats.GradeBCount, @Model.Stats.GradeCCount],
+                        backgroundColor: ['#dc3545', '#ffc107', '#28a745'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+
+            // Auto-refresh every 5 minutes
+            setInterval(function() {
+                location.reload();
+            }, 300000);
+        });
+    </script>
+}
+
+<style>
+    .card-stats, .card-stats-success, .card-stats-warning, .card-stats-info {
+        transition: transform 0.2s ease;
+    }
+
+        .card-stats:hover, .card-stats-success:hover, .card-stats-warning:hover, .card-stats-info:hover {
+            transform: translateY(-2px);
+        }
+
+    .table th {
+        border-top: none;
+        font-weight: 600;
+        background-color: #f8f9fa;
+    }
+
+    .badge-grade-a {
+        background-color: #dc3545;
+        color: white;
+    }
+
+    .badge-grade-b {
+        background-color: #ffc107;
+        color: #333;
+    }
+
+    .badge-grade-c {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .status-new {
+        color: #007bff;
+    }
+
+    .status-sent {
+        color: #ffc107;
+    }
+
+    .status-replied {
+        color: #17a2b8;
+    }
+
+    .status-approved {
+        color: #28a745;
+    }
+
+    .status-closed {
+        color: #6c757d;
+    }
+</style>

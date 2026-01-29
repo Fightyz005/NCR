@@ -1,0 +1,587 @@
+﻿@* NCR/Details.cshtml - NCR Details View *@
+@model NCRManagementSystem.Models.ViewModels.NCRViewModel
+@{
+    ViewData["Title"] = $"รายละเอียด {Model.NCRNumber}";
+}
+
+<div class="row">
+    <!-- NCR Information -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">รายละเอียด @Model.NCRNumber</h5>
+                <div class="d-flex gap-2">
+                    <span class="badge badge-grade-@Model.Grade.ToLower() fs-6">เกรด @Model.Grade</span>
+                    <span class="badge @(Model.Priority == "Urgent" ? "badge-priority-high" : "badge-priority-normal") fs-6">
+                        @(Model.Priority == "Urgent" ? "ด่วนมาก" : "ปกติ")
+                    </span>
+                    <span class="status-@Model.Status.ToLower() fs-6">
+                        <i class="fas fa-circle"></i>
+                        @switch (Model.Status)
+                        {
+                            case "New":
+                                @Html.Raw("ใหม่")
+                                ; break;
+                            case "Sent":
+                                @Html.Raw("ส่งแล้ว")
+                                ; break;
+                            case "Replied":
+                                @Html.Raw("ตอบกลับแล้ว")
+                                ; break;
+                            case "Approved":
+                                @Html.Raw("อนุมัติแล้ว")
+                                ; break;
+                            case "Closed":
+                                @Html.Raw("ปิดงาน")
+                                ; break;
+                            default:
+                                @Model.Status
+                                ; break;
+                        }
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">สินค้า:</td>
+                                <td>@Model.ProductName</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">รหัสสินค้า:</td>
+                                <td>@(Model.ItemCode ?? "-")</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Supplier:</td>
+                                <td>@Model.SupplierName</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Lot No.:</td>
+                                <td>@(Model.LotNumber ?? "-")</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td class="fw-bold">วันที่แจ้ง:</td>
+                                <td>@Model.CreatedDate.ToString("dd/MM/yyyy HH:mm")</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">ผู้แจ้ง:</td>
+                                <td>@Model.CreatedByName</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">วันครบกำหนด:</td>
+                                <td>
+                                    @if (Model.DueDate.HasValue)
+                                    {
+                                        var daysRemaining = (Model.DueDate.Value.Date - DateTime.Now.Date).Days;
+                                        <span class="@(daysRemaining < 0 ? "text-danger" : daysRemaining <= 1 ? "text-warning" : "")">
+                                            @Model.DueDate.Value.ToString("dd/MM/yyyy")
+                                            @if (daysRemaining < 0)
+                                            {
+                                                <small>(เกิน @Math.Abs(daysRemaining) วัน)</small>
+                                            }
+                                            else if (daysRemaining <= 1)
+                                            {
+                                                <small>(เหลือ @daysRemaining วัน)</small>
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-3">
+                    <h6 class="fw-bold">รายละเอียดปัญหา:</h6>
+                    <div class="bg-light p-3 rounded">
+                        @Html.Raw(Model.ProblemDescription.Replace("\n", "<br>"))
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.RootCause))
+                {
+                    <div class="mt-3">
+                        <h6 class="fw-bold text-info">การตอบกลับจาก Supplier:</h6>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <div class="mb-2">
+                                <strong>สาเหตุ:</strong>
+                                <p class="mb-1">@Html.Raw(Model.RootCause.Replace("\n", "<br>"))</p>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.CorrectiveAction))
+                            {
+                                <div class="mb-2">
+                                    <strong>วิธีแก้ไข:</strong>
+                                    <p class="mb-1">@Html.Raw(Model.CorrectiveAction.Replace("\n", "<br>"))</p>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.PreventiveAction))
+                            {
+                                <div class="mb-2">
+                                    <strong>การป้องกัน:</strong>
+                                    <p class="mb-1">@Html.Raw(Model.PreventiveAction.Replace("\n", "<br>"))</p>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.ResponsiblePerson))
+                            {
+                                <div>
+                                    <strong>ผู้รับผิดชอบ:</strong> @Model.ResponsiblePerson
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.QAComments))
+                {
+                    <div class="mt-3">
+                        <h6 class="fw-bold text-primary">ความเห็น QA:</h6>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            @Html.Raw(Model.QAComments.Replace("\n", "<br>"))
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Model.ManagerComments))
+                {
+                    <div class="mt-3">
+                        <h6 class="fw-bold text-success">ความเห็น Manager:</h6>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            @Html.Raw(Model.ManagerComments.Replace("\n", "<br>"))
+                        </div>
+                    </div>
+                }
+
+                <!-- Files Section -->
+                @if (Model.ExistingFiles.Any())
+                {
+                    <div class="mt-4">
+                        <h6 class="fw-bold">ไฟล์แนบ:</h6>
+                        <div class="row">
+                            @foreach (var file in Model.ExistingFiles)
+                            {
+                                <div class="col-md-6 mb-2">
+                                    <div class="d-flex align-items-center justify-content-between p-2 border rounded">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-file me-2"></i>
+                                            <div>
+                                                <div class="fw-medium">@file.OriginalFileName</div>
+                                                <small class="text-muted">@file.FileSizeFormatted • @file.UploadedDate.ToString("dd/MM/yyyy")</small>
+                                            </div>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="@Url.Action("DownloadFile", new { fileId = file.FileId })"
+                                               class="btn btn-outline-primary" target="_blank" title="ดาวน์โหลด">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            @if (User.IsInRole("Admin") || User.IsInRole("QA"))
+                                            {
+                                                <button class="btn btn-outline-danger" onclick="deleteFile(@file.FileId)" title="ลบ">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Add File Section -->
+                @if (Model.Status != "Closed" && (User.IsInRole("QA") || User.IsInRole("Manager") || User.IsInRole("Admin")))
+                {
+                    <div class="mt-3">
+                        <h6 class="fw-bold">เพิ่มไฟล์:</h6>
+                        <div class="d-flex gap-2">
+                            <input type="file" id="additionalFile" class="form-control" accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls,.doc,.docx">
+                            <button class="btn btn-outline-primary" onclick="uploadAdditionalFile()">
+                                <i class="fas fa-upload me-1"></i>อัปโหลด
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Comments Section -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">ความคิดเห็น</h6>
+            </div>
+            <div class="card-body">
+                @if (Model.Comments.Any())
+                {
+                    <div id="commentsList">
+                        @foreach (var comment in Model.Comments.Where(c => c.ParentCommentId == null))
+                        {
+                            <div class="border-bottom pb-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <strong class="me-2">@comment.CreatedByName</strong>
+                                            <span class="badge bg-secondary me-2">@comment.CommentType</span>
+                                            <small class="text-muted">@comment.CreatedDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                        </div>
+                                        <p class="mb-0">@Html.Raw(comment.CommentText.Replace("\n", "<br>"))</p>
+                                    </div>
+                                    @if (!comment.IsResolved && (User.IsInRole("QA") || User.IsInRole("Manager") || User.IsInRole("Admin")))
+                                    {
+                                        <button class="btn btn-sm btn-outline-success" onclick="markAsResolved(@comment.CommentId)">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    }
+                                </div>
+
+                                @* Show replies *@
+                                @foreach (var reply in Model.Comments.Where(c => c.ParentCommentId == comment.CommentId))
+                                {
+                                    <div class="ms-4 mt-2 ps-3 border-start">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <strong class="me-2">@reply.CreatedByName</strong>
+                                            <small class="text-muted">@reply.CreatedDate.ToString("dd/MM/yyyy HH:mm")</small>
+                                        </div>
+                                        <p class="mb-0 small">@Html.Raw(reply.CommentText.Replace("\n", "<br>"))</p>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted text-center">ยังไม่มีความคิดเห็น</p>
+                }
+
+                @if (Model.Status != "Closed")
+                {
+                    <div class="mt-3">
+                        <div class="mb-2">
+                            <select id="commentType" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                                <option value="General">ทั่วไป</option>
+                                @if (User.IsInRole("QA"))
+                                {
+                                    <option value="QA">QA</option>
+                                }
+                                @if (User.IsInRole("Manager"))
+                                {
+                                    <option value="Manager">Manager</option>
+                                }
+                                @if (User.IsInRole("User"))
+                                {
+                                    <option value="Supplier">Supplier</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <textarea id="commentText" class="form-control" rows="2" placeholder="เพิ่มความคิดเห็น..."></textarea>
+                            <button class="btn btn-primary" onclick="addComment()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions Panel -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">การดำเนินการ</h6>
+            </div>
+            <div class="card-body">
+                @if (User.IsInRole("QA") && Model.Status == "New")
+                {
+                    <button class="btn btn-warning w-100 mb-2" onclick="sendToSupplier()">
+                        <i class="fas fa-share me-2"></i>ส่งต่อ Supplier
+                    </button>
+                    <button class="btn btn-outline-danger w-100 mb-2" onclick="rejectNCR()">
+                        <i class="fas fa-times me-2"></i>ปฏิเสธ NCR
+                    </button>
+                }
+
+                @if (User.IsInRole("User") && Model.Status == "Sent")
+                {
+                    <button class="btn btn-success w-100 mb-2" onclick="submitResponse()">
+                        <i class="fas fa-reply me-2"></i>ส่งการตอบกลับ
+                    </button>
+                }
+
+                @if (User.IsInRole("Manager") && Model.Status == "Replied")
+                {
+                    <button class="btn btn-success w-100 mb-2" onclick="approveNCR()">
+                        <i class="fas fa-check me-2"></i>อนุมัติปิด NCR
+                    </button>
+                    <button class="btn btn-outline-warning w-100 mb-2" onclick="sendBackForRevision()">
+                        <i class="fas fa-undo me-2"></i>ส่งกลับแก้ไข
+                    </button>
+                }
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="changeStatus()">
+                        <i class="fas fa-edit me-2"></i>เปลี่ยนสถานะ
+                    </button>
+                }
+
+                <hr>
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="printNCR()">
+                    <i class="fas fa-print me-2"></i>พิมพ์
+                </button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-primary w-100">
+                    <i class="fas fa-arrow-left me-2"></i>กลับ
+                </a>
+            </div>
+        </div>
+
+        <!-- History Panel -->
+        @if (Model.History.Any())
+        {
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">ประวัติการดำเนินการ</h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        @foreach (var history in Model.History.Take(10))
+                        {
+                            <div class="timeline-item">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <div class="fw-medium">@history.Action</div>
+                                    <div class="small text-muted">@history.Description</div>
+                                    <div class="small text-muted">
+                                        @history.ActionDate.ToString("dd/MM/yyyy HH:mm")
+                                        @if (!string.IsNullOrEmpty(history.ActionByName))
+                                        {
+                                            <span>โดย @history.ActionByName</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function addComment() {
+            const commentText = $('#commentText').val().trim();
+            const commentType = $('#commentType').val();
+
+            if (!commentText) {
+                NCRSystem.showAlert('error', 'กรุณากรอกความคิดเห็น');
+                return;
+            }
+
+            NCRSystem.ajaxPost('@Url.Action("AddComment")', {
+                ncrId: @Model.NCRId,
+                commentText: commentText,
+                commentType: commentType
+            }, function() {
+                location.reload();
+            });
+        }
+
+        function markAsResolved(commentId) {
+            NCRSystem.ajaxPost('@Url.Action("MarkCommentResolved")', {
+                commentId: commentId,
+                isResolved: true
+            }, function() {
+                location.reload();
+            });
+        }
+
+        function uploadAdditionalFile() {
+            const fileInput = document.getElementById('additionalFile');
+            if (!fileInput.files.length) {
+                NCRSystem.showAlert('error', 'กรุณาเลือกไฟล์');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('ncrId', @Model.NCRId);
+            formData.append('file', fileInput.files[0]);
+            formData.append('category', 'Additional');
+
+            $.ajax({
+                url: '@Url.Action("UploadFile")',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        NCRSystem.showToast('อัปโหลดไฟล์เรียบร้อยแล้ว');
+                        location.reload();
+                    } else {
+                        NCRSystem.showAlert('error', response.message);
+                    }
+                },
+                error: function() {
+                    NCRSystem.showAlert('error', 'เกิดข้อผิดพลาดในการอัปโหลดไฟล์');
+                }
+            });
+        }
+
+        function deleteFile(fileId) {
+            Swal.fire({
+                title: 'ยืนยันการลบไฟล์',
+                text: 'คุณแน่ใจหรือไม่ว่าต้องการลบไฟล์นี้?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("DeleteFile")', {
+                        fileId: fileId
+                    }, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function sendToSupplier() {
+            window.location.href = '@Url.Action("Review", "QA", new { ncrId = Model.NCRId })';
+        }
+
+        function submitResponse() {
+            window.location.href = '@Url.Action("Response", "Supplier", new { ncrId = Model.NCRId })';
+        }
+
+        function approveNCR() {
+            window.location.href = '@Url.Action("Approval", "Manager", new { ncrId = Model.NCRId })';
+        }
+
+        function rejectNCR() {
+            Swal.fire({
+                title: 'ปฏิเสธ NCR',
+                input: 'textarea',
+                inputLabel: 'เหตุผลในการปฏิเสธ',
+                inputPlaceholder: 'กรุณาระบุเหตุผล...',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'กรุณาระบุเหตุผล';
+                    }
+                },
+                showCancelButton: true,
+                confirmButtonText: 'ปฏิเสธ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("RejectNCR", "QA")', {
+                        ncrId: @Model.NCRId,
+                        reason: result.value
+                    }, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function changeStatus() {
+            const statuses = [
+                { value: 'New', text: 'ใหม่' },
+                { value: 'Sent', text: 'ส่งแล้ว' },
+                { value: 'Replied', text: 'ตอบกลับแล้ว' },
+                { value: 'Approved', text: 'อนุมัติแล้ว' },
+                { value: 'Closed', text: 'ปิดงาน' }
+            ];
+
+            const options = statuses.map(s => `<option value="${s.value}">${s.text}</option>`).join('');
+
+            Swal.fire({
+                title: 'เปลี่ยนสถานะ NCR',
+                html: `
+                    <select id="newStatus" class="form-select mb-3">
+                        ${options}
+                    </select>
+                    <textarea id="statusComments" class="form-control" placeholder="หมายเหตุ (ไม่บังคับ)" rows="3"></textarea>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'เปลี่ยนสถานะ',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    return {
+                        status: document.getElementById('newStatus').value,
+                        comments: document.getElementById('statusComments').value
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("UpdateStatus")', {
+                        ncrId: @Model.NCRId,
+                        newStatus: result.value.status,
+                        comments: result.value.comments
+                    }, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function printNCR() {
+            NCRSystem.printElement('.card');
+        }
+    </script>
+}
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 20px;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -25px;
+        top: 5px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #007bff;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px #007bff;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: -21px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+
+    .timeline-content {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        border-left: 3px solid #007bff;
+    }
+</style>

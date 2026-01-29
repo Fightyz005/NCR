@@ -1,0 +1,276 @@
+﻿@model NCRManagementSystem.Models.ViewModels.NCRViewModel
+@{
+    ViewData["Title"] = "แจ้ง NCR ใหม่";
+}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">แจ้ง NCR ใหม่</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" method="post" enctype="multipart/form-data" id="createNCRForm">
+            @Html.AntiForgeryToken()
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="NCRNumber" class="form-label">เลข NCR</label>
+                        <input asp-for="NCRNumber" class="form-control" readonly>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="CreatedDate" class="form-label">วันที่แจ้ง</label>
+                        <input asp-for="CreatedDate" type="date" class="form-control" readonly>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="ProductName" class="form-label">ชื่อสินค้า <span class="text-danger">*</span></label>
+                        <input asp-for="ProductName" class="form-control" placeholder="ระบุชื่อสินค้า">
+                        <span asp-validation-for="ProductName" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="ItemCode" class="form-label">ITEM Code</label>
+                        <input asp-for="ItemCode" class="form-control" placeholder="รหัสสินค้า">
+                        <span asp-validation-for="ItemCode" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="SupplierId" class="form-label">Supplier <span class="text-danger">*</span></label>
+                        <select asp-for="SupplierId" asp-items="Model.Suppliers" class="form-select">
+                            <option value="">เลือก Supplier</option>
+                        </select>
+                        <span asp-validation-for="SupplierId" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="LotNumber" class="form-label">Lot No.</label>
+                        <input asp-for="LotNumber" class="form-control" placeholder="หมายเลข Lot">
+                        <span asp-validation-for="LotNumber" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Grade" class="form-label">เกรดของปัญหา <span class="text-danger">*</span></label>
+                        <select asp-for="Grade" asp-items="Model.Grades" class="form-select">
+                            <option value="">เลือกเกรด</option>
+                        </select>
+                        <span asp-validation-for="Grade" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label asp-for="Priority" class="form-label">ความเร่งด่วน <span class="text-danger">*</span></label>
+                        <select asp-for="Priority" asp-items="Model.Priorities" class="form-select">
+                            <option value="">เลือกความเร่งด่วน</option>
+                        </select>
+                        <span asp-validation-for="Priority" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="ProblemDescription" class="form-label">รายละเอียดของปัญหา <span class="text-danger">*</span></label>
+                <textarea asp-for="ProblemDescription" class="form-control" rows="4" placeholder="อธิบายปัญหาที่พบ..."></textarea>
+                <span asp-validation-for="ProblemDescription" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Files" class="form-label">แนบไฟล์หลักฐาน</label>
+                <div class="file-upload-area" id="fileUploadArea">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                    <p class="mb-0">คลิกเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่</p>
+                    <small class="text-muted">รองรับไฟล์: JPG, PNG, PDF, Excel (ขนาดไม่เกิน 10MB)</small>
+                </div>
+                <input asp-for="Files" type="file" id="fileInput" class="d-none" multiple accept=".jpg,.jpeg,.png,.pdf,.xlsx,.xls">
+                <div id="fileList" class="mt-2"></div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" data-loading>
+                    <i class="fas fa-paper-plane me-2"></i>แจ้งปัญหา
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                    <i class="fas fa-save me-2"></i>บันทึกแบบร่าง
+                </button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-danger">
+                    <i class="fas fa-times me-2"></i>ยกเลิก
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            NCRSystem.initFileUpload('#fileUploadArea', '#fileInput', function(files) {
+                updateFileList(files);
+            });
+
+            setTimeout(function() {
+                // แทนที่จะจับ form submit ให้จับ button click แทน
+                $('button[type="submit"]').off().on('click', function(e) {
+                    console.log('Submit button clicked - processing...');
+
+                    // ป้องกันการ submit ก่อน
+                    e.preventDefault();
+
+                    // Validation
+                    const productName = $('#ProductName').val().trim();
+                    const supplierId = $('#SupplierId').val();
+                    const grade = $('#Grade').val();
+                    const priority = $('#Priority').val();
+                    const description = $('#ProblemDescription').val().trim();
+
+                    console.log('Form data:', {productName, supplierId, grade, priority, description});
+
+                    if (!productName || !supplierId || !grade || !priority || !description) {
+                        alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
+                        console.log('Validation failed');
+                        return false;
+                    }
+
+                    console.log('Validation passed - submitting form manually...');
+
+                    // Submit form manually
+                    $('#createNCRForm')[0].submit();
+                });
+
+                console.log('Button handler set up complete');
+            }, 1000);
+
+            $('#Grade').on('change', function() {
+                calculateDueDate();
+            });
+
+            $('#Priority').on('change', function() {
+                calculateDueDate();
+            });
+        });
+
+
+        function updateFileList(files) {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+
+            Array.from(files).forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'd-flex align-items-center justify-content-between p-2 bg-light rounded mb-2';
+                fileItem.innerHTML = `
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-file me-2"></i>
+                        <div>
+                            <div class="fw-medium">${file.name}</div>
+                            <small class="text-muted">${NCRSystem.formatFileSize(file.size)}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+
+        function removeFile(index) {
+            const fileInput = document.getElementById('fileInput');
+            const dt = new DataTransfer();
+            const files = fileInput.files;
+
+            for (let i = 0; i < files.length; i++) {
+                if (i !== index) {
+                    dt.items.add(files[i]);
+                }
+            }
+
+            fileInput.files = dt.files;
+            updateFileList(fileInput.files);
+        }
+
+        function validateForm() {
+            const requiredFields = ['ProductName', 'SupplierId', 'Grade', 'Priority', 'ProblemDescription'];
+            let isValid = true;
+
+            console.log('Validating form...'); // debug
+
+            requiredFields.forEach(field => {
+                const element = document.getElementById(field);
+                console.log(`Field ${field}:`, element ? element.value : 'NOT FOUND'); // debug
+
+                if (!element || !element.value.trim()) {
+                    if (element) element.classList.add('is-invalid');
+                    isValid = false;
+                    console.log(`Field ${field} is invalid`); // debug
+                } else {
+                    if (element) element.classList.remove('is-invalid');
+                }
+            });
+
+            console.log('Form validation result:', isValid); // debug
+
+            if (!isValid) {
+                NCRSystem.showAlert('error', 'กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
+            }
+
+            return isValid;
+        }
+
+        function calculateDueDate() {
+            const grade = document.getElementById('Grade').value;
+            const priority = document.getElementById('Priority').value;
+
+            if (!grade) return;
+
+            let days = 5; // default
+            switch (grade) {
+                case 'A': days = 2; break;
+                case 'B': days = 5; break;
+                case 'C': days = 7; break;
+            }
+
+            if (priority === 'Urgent') {
+                days = Math.max(1, Math.floor(days / 2));
+            }
+
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + days);
+
+            // Show calculated due date to user
+            NCRSystem.showToast(`กำหนดครบกำหนด: ${dueDate.toLocaleDateString('th-TH')} (${days} วัน)`, 'info');
+        }
+
+        function saveDraft() {
+            const formData = NCRSystem.serializeFormToObject('#createNCRForm');
+            NCRSystem.saveToLocalStorage('ncrDraft', formData);
+            NCRSystem.showToast('บันทึกแบบร่างเรียบร้อยแล้ว');
+        }
+
+        // Load draft on page load
+        $(document).ready(function() {
+            const draft = NCRSystem.getFromLocalStorage('ncrDraft');
+            if (draft && confirm('พบแบบร่างที่บันทึกไว้ ต้องการโหลดหรือไม่?')) {
+                Object.keys(draft).forEach(key => {
+                    const element = document.getElementById(key);
+                    if (element && draft[key]) {
+                        element.value = draft[key];
+                    }
+                });
+                NCRSystem.removeFromLocalStorage('ncrDraft');
+            }
+        });
+    </script>
+}

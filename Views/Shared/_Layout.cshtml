@@ -1,0 +1,524 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - NCR Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="~/css/ncr-custom.css" rel="stylesheet" />
+    <style>
+        .sidebar {
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+
+        .navbar-custom {
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .card-stats {
+            background: linear-gradient(45deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+        }
+
+        .card-stats-success {
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+        }
+
+        .card-stats-warning {
+            background: linear-gradient(45deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+            border: none;
+        }
+
+        .card-stats-info {
+            background: linear-gradient(45deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+            border: none;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8) !important;
+            padding: 12px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+            background-color: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            margin: 0 10px;
+        }
+
+        .nav-link.active {
+            color: white !important;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 8px;
+            margin: 0 10px;
+        }
+
+        .brand-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .badge-priority-high {
+            background-color: #dc3545;
+        }
+
+        .badge-priority-normal {
+            background-color: #28a745;
+        }
+
+        .badge-grade-a {
+            background-color: #dc3545;
+        }
+
+        .badge-grade-b {
+            background-color: #ffc107;
+            color: #333;
+        }
+
+        .badge-grade-c {
+            background-color: #28a745;
+        }
+
+        .status-new {
+            color: #007bff;
+        }
+
+        .status-sent {
+            color: #ffc107;
+        }
+
+        .status-replied {
+            color: #17a2b8;
+        }
+
+        .status-approved {
+            color: #28a745;
+        }
+
+        .status-closed {
+            color: #6c757d;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload-area:hover {
+            border-color: #007bff;
+            background-color: #f8f9fa;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #007bff;
+            background-color: #e3f2fd;
+        }
+
+        .mobile-menu-btn {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="p-3">
+            <a href="@Url.Action("Index", "Dashboard")" class="brand-text text-decoration-none">
+                <i class="fas fa-clipboard-check me-2"></i>
+                NCR System
+            </a>
+        </div>
+
+        <ul class="nav nav-pills flex-column mt-4">
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Dashboard" ? "active" : "")"
+                   href="@Url.Action("Index", "Dashboard")">
+                    <i class="fas fa-tachometer-alt me-2"></i>
+                    แดชบอร์ด
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "NCR" && ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "active" : "")"
+                   href="@Url.Action("Create", "NCR")">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    แจ้ง NCR ใหม่
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "NCR" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")"
+                   href="@Url.Action("Index", "NCR")">
+                    <i class="fas fa-list me-2"></i>
+                    รายการ NCR
+                </a>
+            </li>
+
+            @if (User.IsInRole("QA") || User.IsInRole("Manager") || User.IsInRole("Admin"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "QA" ? "active" : "")"
+                       href="@Url.Action("Index", "QA")">
+                        <i class="fas fa-search me-2"></i>
+                        QA ตรวจสอบ
+                    </a>
+                </li>
+            }
+
+            @if (User.IsInRole("User"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Supplier" ? "active" : "")"
+                       href="@Url.Action("Index", "Supplier")">
+                        <i class="fas fa-reply me-2"></i>
+                        การตอบกลับ Supplier
+                    </a>
+                </li>
+            }
+
+            @if (User.IsInRole("Manager") || User.IsInRole("Admin"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Manager" ? "active" : "")"
+                       href="@Url.Action("Index", "Manager")">
+                        <i class="fas fa-check-circle me-2"></i>
+                        อนุมัติ Manager
+                    </a>
+                </li>
+            }
+
+            <li class="nav-item">
+                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Report" ? "active" : "")"
+                   href="@Url.Action("Index", "Report")">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    รายงาน
+                </a>
+            </li>
+        </ul>
+
+        <div class="mt-auto p-3">
+            <div class="dropdown">
+                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+                    <i class="fas fa-user me-2"></i>
+                    @User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value (@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value)
+                </a>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="#"><i class="fas fa-user-edit me-2"></i>แก้ไขโปรไฟล์</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i>ออกจากระบบ</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-custom">
+            <div class="container-fluid">
+                <button class="btn btn-outline-primary mobile-menu-btn me-3" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+
+                <h4 class="mb-0" id="page-title">@ViewData["Title"]</h4>
+
+                <div class="d-flex align-items-center">
+                    <div class="dropdown me-3">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-bell"></i>
+                            แจ้งเตือน
+                            <span class="badge bg-danger ms-1" id="notificationCount">0</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" id="notificationList">
+                            <li><span class="dropdown-item-text">ไม่มีการแจ้งเตือน</span></li>
+                        </ul>
+                    </div>
+                    <span class="text-muted" id="currentDateTime"></span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Page Content -->
+        <div class="container-fluid p-4">
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    @TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (TempData["InfoMessage"] != null)
+            {
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <i class="fas fa-info-circle me-2"></i>
+                    @TempData["InfoMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="d-none" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+        <div class="text-center text-white">
+            <div class="spinner-border mb-3" style="width: 3rem; height: 3rem;"></div>
+            <div>กำลังประมวลผล...</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jQuery Validation Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="~/js/site.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <script>
+        $(document).ready(function() {
+            // Update current date time
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+
+            // Load notifications
+            loadNotifications();
+            setInterval(loadNotifications, 30000); // Refresh every 30 seconds
+
+            // Initialize tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'Asia/Bangkok'
+            };
+
+            $('#currentDateTime').text(now.toLocaleDateString('th-TH', options));
+        }
+
+        function loadNotifications() {
+            $.ajax({
+                url: '@Url.Action("GetNotifications", "Dashboard")',
+                type: 'GET',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        updateNotificationUI(response.data);
+                    }
+                },
+                error: function() {
+                    console.log('Error loading notifications');
+                }
+            });
+        }
+
+        function updateNotificationUI(notifications) {
+            const $count = $('#notificationCount');
+            const $list = $('#notificationList');
+
+            $count.text(notifications.length);
+            $count.toggleClass('d-none', notifications.length === 0);
+
+            if (notifications.length === 0) {
+                $list.html('<li><span class="dropdown-item-text">ไม่มีการแจ้งเตือน</span></li>');
+            } else {
+                const items = notifications.map(n =>
+                    `<li><a class="dropdown-item" href="${n.url || '#'}">
+                        <small class="text-muted">${n.timeAgo}</small><br>
+                        ${n.message}
+                    </a></li>`
+                ).join('');
+                $list.html(items);
+            }
+        }
+
+        function toggleSidebar() {
+            $('#sidebar').toggleClass('show');
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'ออกจากระบบ?',
+                text: 'คุณต้องการออกจากระบบหรือไม่?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ออกจากระบบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create a form and submit it
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': '@Url.Action("Logout", "Auth")'
+                    });
+
+                    // Add anti-forgery token
+                    form.append('@Html.AntiForgeryToken()');
+
+                    $('body').append(form);
+                    form.submit();
+                }
+            });
+        }
+
+        function showLoading() {
+            $('#loadingOverlay').removeClass('d-none').css('display', 'flex');
+        }
+
+        function hideLoading() {
+            $('#loadingOverlay').addClass('d-none');
+        }
+
+        // Global error handler
+        $(document).ajaxError(function(event, xhr, settings, thrownError) {
+            hideLoading();
+            if (xhr.status === 401) {
+                // Unauthorized - redirect to login
+                window.location.href = '@Url.Action("Login", "Auth")';
+            } else if (xhr.status !== 0) { // Ignore aborted requests
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                });
+            }
+        });
+
+        // Global success handler for AJAX
+        function handleAjaxSuccess(response, successCallback) {
+            if (response.success) {
+                if (response.message) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ',
+                        text: response.message,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                }
+                if (successCallback) successCallback(response);
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: response.message || 'การดำเนินการไม่สำเร็จ'
+                });
+            }
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('th-TH', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Drag and drop file upload helper
+        function initFileUpload(uploadAreaSelector, fileInputSelector, onFileSelect) {
+            const $uploadArea = $(uploadAreaSelector);
+            const $fileInput = $(fileInputSelector);
+
+            $uploadArea.on('click', function() {
+                $fileInput.click();
+            });
+
+            $uploadArea.on('dragover', function(e) {
+                e.preventDefault();
+                $(this).addClass('dragover');
+            });
+
+            $uploadArea.on('dragleave', function(e) {
+                e.preventDefault();
+                $(this).removeClass('dragover');
+            });
+
+            $uploadArea.on('drop', function(e) {
+                e.preventDefault();
+                $(this).removeClass('dragover');
+
+                const files = e.originalEvent.dataTransfer.files;
+                if (files.length > 0) {
+                    $fileInput[0].files = files;
+                    if (onFileSelect) onFileSelect(files);
+                }
+            });
+
+            $fileInput.on('change', function() {
+                if (onFileSelect) onFileSelect(this.files);
+            });
+        }
+
+        // Auto-hide alerts
+        setTimeout(function() {
+            $('.alert:not(.alert-permanent)').fadeOut();
+        }, 5000);
+    </script>
+</body>
+</html>

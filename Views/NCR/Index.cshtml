@@ -1,0 +1,334 @@
+﻿@* NCR/Index.cshtml - NCR List View *@
+@model NCRManagementSystem.Models.ViewModels.NCRListViewModel
+@{
+    ViewData["Title"] = "รายการ NCR";
+}
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">รายการ NCR ทั้งหมด</h5>
+        <div class="d-flex gap-2">
+            <a href="@Url.Action("Create")" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>สร้าง NCR ใหม่
+            </a>
+            <button class="btn btn-outline-success btn-sm" onclick="exportToExcel()">
+                <i class="fas fa-file-excel me-2"></i>Export Excel
+            </button>
+            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <i class="fas fa-filter me-2"></i>ตัวกรอง
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Search and Filter -->
+        <div class="collapse" id="filterCollapse">
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <form asp-action="Index" method="get">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <input asp-for="SearchTerm" class="form-control" placeholder="ค้นหา NCR, สินค้า, Supplier...">
+                            </div>
+                            <div class="col-md-2">
+                                <select asp-for="Status" asp-items="Model.StatusOptions" class="form-select">
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select asp-for="Grade" asp-items="Model.GradeOptions" class="form-select">
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select asp-for="SupplierId" asp-items="Model.Suppliers" class="form-select">
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input asp-for="FromDate" type="date" class="form-control" placeholder="จากวันที่">
+                            </div>
+                            <div class="col-md-1">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-2">
+                                <input asp-for="ToDate" type="date" class="form-control" placeholder="ถึงวันที่">
+                            </div>
+                            <div class="col-md-2">
+                                <a href="@Url.Action("Index")" class="btn btn-outline-secondary w-100">
+                                    <i class="fas fa-times me-1"></i>ล้างตัวกรอง
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- NCR Table -->
+        @if (Model.NCRs.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>เลข NCR</th>
+                            <th>สินค้า</th>
+                            <th>Supplier</th>
+                            <th>เกรด</th>
+                            <th>ความเร่งด่วน</th>
+                            <th>สถานะ</th>
+                            <th>วันที่แจ้ง</th>
+                            <th>ครบกำหนด</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var ncr in Model.NCRs)
+                        {
+                            <tr class="@(ncr.DaysRemaining < 0 ? "table-warning" : "")">
+                                <td>
+                                    <a href="@Url.Action("Details", new { id = ncr.NCRId })" 
+                                       class="text-decoration-none fw-bold">@ncr.NCRNumber</a>
+                                </td>
+                                <td>
+                                    <div class="fw-medium">@ncr.ProductName</div>
+                                    @if (!string.IsNullOrEmpty(ncr.ItemCode))
+                                    {
+                                        <small class="text-muted">@ncr.ItemCode</small>
+                                    }
+                                </td>
+                                <td>@ncr.SupplierName</td>
+                                <td>
+                                    <span class="badge badge-grade-@ncr.Grade.ToLower()">@ncr.Grade</span>
+                                </td>
+                                <td>
+                                    <span class="badge @(ncr.Priority == "Urgent" ? "badge-priority-high" : "badge-priority-normal")">
+                                        @(ncr.Priority == "Urgent" ? "ด่วนมาก" : "ปกติ")
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="status-@ncr.Status.ToLower()">
+                                        <i class="fas fa-circle"></i>
+                                        @switch (ncr.Status)
+                                        {
+                                            case "New": @Html.Raw("ใหม่"); break;
+                                            case "Sent": @Html.Raw("ส่งแล้ว"); break;
+                                            case "Replied": @Html.Raw("ตอบกลับแล้ว"); break;
+                                            case "Approved": @Html.Raw("อนุมัติแล้ว"); break;
+                                            case "Closed": @Html.Raw("ปิดงาน"); break;
+                                            default: @ncr.Status; break;
+                                        }
+                                    </span>
+                                </td>
+                                <td>@ncr.CreatedDate.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    @if (ncr.DueDate.HasValue)
+                                    {
+                                        <span class="@(ncr.DaysRemaining < 0 ? "text-danger" : ncr.DaysRemaining <= 1 ? "text-warning" : "")">
+                                            @ncr.DueDate.Value.ToString("dd/MM/yyyy")
+                                            @if (ncr.DaysRemaining.HasValue)
+                                            {
+                                                @if (ncr.DaysRemaining < 0)
+                                                {
+                                                    <br><small>เกิน @Math.Abs(ncr.DaysRemaining.Value) วัน</small>
+                                                }
+                                                else if (ncr.DaysRemaining <= 3)
+                                                {
+                                                    <br><small>เหลือ @ncr.DaysRemaining วัน</small>
+                                                }
+                                            }
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="@Url.Action("Details", new { id = ncr.NCRId })" 
+                                           class="btn btn-outline-primary" title="ดูรายละเอียด">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (User.IsInRole("QA") || User.IsInRole("Manager") || User.IsInRole("Admin"))
+                                        {
+                                            @if (ncr.Status == "New")
+                                            {
+                                                <button class="btn btn-outline-success" onclick="sendToSupplier(@ncr.NCRId)" title="ส่งต่อ">
+                                                    <i class="fas fa-share"></i>
+                                                </button>
+                                            }
+                                            else if (ncr.Status == "Replied")
+                                            {
+                                                <button class="btn btn-outline-info" onclick="reviewNCR(@ncr.NCRId)" title="ตรวจสอบ">
+                                                    <i class="fas fa-search"></i>
+                                                </button>
+                                            }
+                                        }
+                                        @if (User.IsInRole("Admin"))
+                                        {
+                                            <button class="btn btn-outline-danger btn-sm" onclick="deleteNCR(@ncr.NCRId)" title="ลบ">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav>
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = Model.PageNumber - 1, search = Model.SearchTerm, status = Model.Status, grade = Model.Grade, supplierId = Model.SupplierId, fromDate = Model.FromDate, toDate = Model.ToDate })">
+                                ก่อนหน้า
+                            </a>
+                        </li>
+                        
+                        @for (int i = Math.Max(1, Model.PageNumber - 2); i <= Math.Min(Model.TotalPages, Model.PageNumber + 2); i++)
+                        {
+                            <li class="page-item @(i == Model.PageNumber ? "active" : "")">
+                                <a class="page-link" href="@Url.Action("Index", new { page = i, search = Model.SearchTerm, status = Model.Status, grade = Model.Grade, supplierId = Model.SupplierId, fromDate = Model.FromDate, toDate = Model.ToDate })">
+                                    @i
+                                </a>
+                            </li>
+                        }
+                        
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            <a class="page-link" href="@Url.Action("Index", new { page = Model.PageNumber + 1, search = Model.SearchTerm, status = Model.Status, grade = Model.Grade, supplierId = Model.SupplierId, fromDate = Model.FromDate, toDate = Model.ToDate })">
+                                ถัดไป
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">ไม่พบ NCR</h5>
+                <p class="text-muted">ลองปรับเปลี่ยนเงื่อนไขการค้นหาหรือสร้าง NCR ใหม่</p>
+                <a href="@Url.Action("Create")" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>สร้าง NCR ใหม่
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function sendToSupplier(ncrId) {
+            Swal.fire({
+                title: 'ส่งต่อ NCR ให้ Supplier',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label">อีเมลผู้รับ:</label>
+                            <input type="email" id="recipientEmail" class="form-control" placeholder="supplier@company.com">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">วันครบกำหนด:</label>
+                            <input type="date" id="dueDate" class="form-control" value="${new Date(Date.now() + 5*24*60*60*1000).toISOString().split('T')[0]}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ข้อความเพิ่มเติม:</label>
+                            <textarea id="message" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'ส่งต่อ',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const email = document.getElementById('recipientEmail').value;
+                    const dueDate = document.getElementById('dueDate').value;
+                    const message = document.getElementById('message').value;
+                    
+                    if (!email) {
+                        Swal.showValidationMessage('กรุณากรอกอีเมลผู้รับ');
+                        return false;
+                    }
+                    
+                    return { email, dueDate, message };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("SendToSupplier", "QA")', {
+                        ncrId: ncrId,
+                        recipientEmail: result.value.email,
+                        responseDueDate: result.value.dueDate,
+                        additionalMessage: result.value.message
+                    }, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function reviewNCR(ncrId) {
+            window.location.href = `/NCR/Details/${ncrId}`;
+        }
+
+        function deleteNCR(ncrId) {
+            Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณแน่ใจหรือไม่ว่าต้องการลบ NCR นี้?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    NCRSystem.ajaxPost('@Url.Action("Delete")', {
+                        id: ncrId
+                    }, function() {
+                        location.reload();
+                    });
+                }
+            });
+        }
+
+        function exportToExcel() {
+            const params = new URLSearchParams({
+                search: '@Model.SearchTerm',
+                status: '@Model.Status',
+                grade: '@Model.Grade',
+                supplierId: '@Model.SupplierId',
+                fromDate: '@Model.FromDate?.ToString("yyyy-MM-dd")',
+                toDate: '@Model.ToDate?.ToString("yyyy-MM-dd")'
+            });
+            
+            window.open(`@Url.Action("ExportExcel", "Report")?${params}`, '_blank');
+        }
+    </script>
+}
+
+@* Styles for status indicators *@
+<style>
+    .status-new { color: #007bff; }
+    .status-sent { color: #ffc107; }
+    .status-replied { color: #17a2b8; }
+    .status-approved { color: #28a745; }
+    .status-closed { color: #6c757d; }
+
+    .badge-grade-a { background-color: #dc3545; color: white; }
+    .badge-grade-b { background-color: #ffc107; color: #333; }
+    .badge-grade-c { background-color: #28a745; color: white; }
+    
+    .badge-priority-high { background-color: #dc3545; color: white; }
+    .badge-priority-normal { background-color: #28a745; color: white; }
+    
+    .table-warning {
+        background-color: rgba(255, 193, 7, 0.1) !important;
+    }
+</style>
