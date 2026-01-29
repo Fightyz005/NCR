@@ -33,7 +33,18 @@ builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+// Add repositories
+builder.Services.AddScoped<IMaterialPriceRequestRepository, MaterialPriceRequestRepository>();
+builder.Services.AddScoped<IExternalPrRepository, ExternalPrRepository>();
+builder.Services.AddScoped<IPrPriceRequestRepository, PrPriceRequestRepository>();
 
+// Add services
+builder.Services.AddScoped<IMaterialPriceRequestService, MaterialPriceRequestService>();
+builder.Services.AddScoped<IPrPriceRequestService, PrPriceRequestService>();
+builder.Services.AddScoped<ILineNotificationService, LineNotificationService>();
+
+// Add HttpClient for Line Notify
+builder.Services.AddHttpClient();
 // Add database connection
 builder.Services.AddScoped<DbConnection>();
 

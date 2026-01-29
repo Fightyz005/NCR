@@ -1,12 +1,12 @@
-﻿@model NCRManagementSystem.Models.ViewModels.MaterialPriceRequestCreateViewModel
+@model NCRManagementSystem.Models.ViewModels.PrPriceRequestCreateViewModel
 
 @{
-    ViewData["Title"] = "สร้างใบร้องขอราคาวัตถุดิบ";
+    ViewData["Title"] = "สร้างใบขอราคาจาก PR";
 }
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">สร้างใบร้องขอราคาวัตถุดิบ</h1>
+        <h1 class="h3 mb-0 text-gray-800">สร้างใบขอราคาจาก PR</h1>
         <a asp-action="Index" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> กลับ
         </a>
@@ -14,16 +14,29 @@
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">ข้อมูลใบร้องขอ</h6>
+            <h6 class="m-0 font-weight-bold text-primary">ข้อมูลใบขอราคา</h6>
         </div>
         <div class="card-body">
             <form asp-action="Create" method="post" enctype="multipart/form-data" id="createForm">
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
                 <div class="form-row">
-                    <div class="form-group col-md-4">
-                        <label asp-for="RequestNumber" class="control-label">เลขที่ใบขอราคา</label>
-                        <input asp-for="RequestNumber" class="form-control" readonly />
+                    <div class="form-group col-md-6">
+                        <label asp-for="PrNumber" class="control-label"></label>
+                        <div class="input-group">
+                            <input asp-for="PrNumber" class="form-control" placeholder="ระบุเลข PR (เช่น 1700002814)" />
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-primary" id="btnFetchPr">
+                                    <i class="fas fa-search"></i> ดึงข้อมูล
+                                </button>
+                            </div>
+                        </div>
+                        <span asp-validation-for="PrNumber" class="text-danger"></span>
+                    </div>
+                     <div class="form-group col-md-6">
+                        <label asp-for="VendorEmail" class="control-label"></label>
+                        <input asp-for="VendorEmail" class="form-control" placeholder="vendor@example.com" />
+                        <span asp-validation-for="VendorEmail" class="text-danger"></span>
                     </div>
                 </div>
 
@@ -35,12 +48,7 @@
 
                 <hr />
 
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">รายการวัตถุดิบ</h5>
-                    <button type="button" class="btn btn-success btn-sm" id="addItemBtn">
-                        <i class="fas fa-plus"></i> เพิ่มรายการ
-                    </button>
-                </div>
+                <h5 class="mb-3">รายการจาก PR</h5>
 
                 <div class="table-responsive">
                     <table class="table table-bordered" id="itemsTable">
@@ -60,24 +68,19 @@
                             {
                                 <tr class="item-row" data-index="@i">
                                     <td>
-                                        <select asp-for="Items[i].Plant" class="form-control form-control-sm"
-                                                asp-items="@Model.PlantOptions">
-                                        </select>
-                                        <span asp-validation-for="Items[i].Plant" class="text-danger"></span>
+                                        <input asp-for="Items[i].Plant" class="form-control form-control-sm" readonly />
                                     </td>
                                     <td>
-                                        <input asp-for="Items[i].MaterialCode" class="form-control form-control-sm" />
-                                        <span asp-validation-for="Items[i].MaterialCode" class="text-danger"></span>
+                                        <input asp-for="Items[i].MaterialCode" class="form-control form-control-sm" readonly />
                                     </td>
                                     <td>
-                                        <input asp-for="Items[i].MaterialName" class="form-control form-control-sm" />
-                                        <span asp-validation-for="Items[i].MaterialName" class="text-danger"></span>
+                                        <input asp-for="Items[i].MaterialName" class="form-control form-control-sm" readonly />
                                     </td>
                                     <td>
-                                        <input asp-for="Items[i].Quantity" class="form-control form-control-sm" type="number" step="0.01" />
+                                        <input asp-for="Items[i].Quantity" class="form-control form-control-sm" readonly />
                                     </td>
                                     <td>
-                                        <input asp-for="Items[i].Unit" class="form-control form-control-sm" />
+                                        <input asp-for="Items[i].Unit" class="form-control form-control-sm" readonly />
                                     </td>
                                     <td>
                                         <input asp-for="Items[i].Remark" class="form-control form-control-sm" />
@@ -113,51 +116,69 @@
         $(document).ready(function() {
             let itemIndex = @Model.Items.Count;
 
+            // Fetch PR Logic
+            $('#btnFetchPr').click(function() {
+                var banfn = $('#PrNumber').val();
+                if (!banfn) {
+                    alert('กรุณาระบุเลขที่ PR');
+                    return;
+                }
 
+                // Show loading
+                var btn = $(this);
+                var originalText = btn.html();
+                btn.html('<i class="fas fa-spinner fa-spin"></i> กำลังโหลด...');
+                btn.prop('disabled', true);
 
-            // Add Item Logic
-            $('#addItemBtn').click(function() {
-                addItemRow();
+                $.get('@Url.Action("FetchPrItems", "PrPriceRequest")', { banfn: banfn })
+                    .done(function(data) {
+                        if (data && data.length > 0) {
+                            // Clear existing items
+                            $('#itemsContainer').empty();
+                            itemIndex = 0;
+
+                            data.forEach(function(item) {
+                                addItemRow(item);
+                            });
+                        } else {
+                            alert('ไม่พบข้อมูล PR หรือไม่มีรายการ');
+                        }
+                    })
+                    .fail(function(xhr) {
+                        alert('เกิดข้อผิดพลาด: ' + (xhr.responseText || 'ไม่สามารถดึงข้อมูลได้'));
+                    })
+                    .always(function() {
+                        btn.html(originalText);
+                        btn.prop('disabled', false);
+                    });
             });
 
             // Remove Item Logic
             $(document).on('click', '.remove-item', function() {
-                if ($('.item-row').length > 1) {
+                if (confirm('ต้องการลบรายการนี้ใช่หรือไม่?')) {
                     $(this).closest('tr').remove();
                     reindexItems();
-                } else {
-                    alert('ต้องมีรายการอย่างน้อย 1 รายการ');
                 }
             });
             
             // Helper to add row
-            function addItemRow(data = null) {
-                var plant = data ? data.werks : '1000'; // Default KP01
-                var matCode = data ? data.matnr : '';
-                var matName = data ? data.txz01 : '';
-                var qty = data ? data.menge : '';
-                var unit = data ? data.meins : '';
-
+            function addItemRow(data) {
                 var html = `
                     <tr class="item-row" data-index="${itemIndex}">
                         <td>
-                            <select name="Items[${itemIndex}].Plant" class="form-control form-control-sm">
-                                <option value="1000" ${plant == '1000' || plant == 'KP01' ? 'selected' : ''}>KP01</option>
-                                <option value="2000" ${plant == '2000' || plant == 'KB01' ? 'selected' : ''}>KB01</option>
-                                <option value="3000" ${plant == '3000' || plant == 'KY01' ? 'selected' : ''}>KY01</option>
-                            </select>
+                            <input name="Items[${itemIndex}].Plant" value="${data.werks}" class="form-control form-control-sm" readonly />
                         </td>
                         <td>
-                            <input name="Items[${itemIndex}].MaterialCode" value="${matCode}" class="form-control form-control-sm" />
+                            <input name="Items[${itemIndex}].MaterialCode" value="${data.matnr}" class="form-control form-control-sm" readonly />
                         </td>
                         <td>
-                            <input name="Items[${itemIndex}].MaterialName" value="${matName}" class="form-control form-control-sm" />
+                            <input name="Items[${itemIndex}].MaterialName" value="${data.txz01}" class="form-control form-control-sm" readonly />
                         </td>
                         <td>
-                            <input name="Items[${itemIndex}].Quantity" value="${qty}" class="form-control form-control-sm" type="number" step="0.01" />
+                            <input name="Items[${itemIndex}].Quantity" value="${data.menge}" class="form-control form-control-sm" readonly />
                         </td>
                         <td>
-                            <input name="Items[${itemIndex}].Unit" value="${unit}" class="form-control form-control-sm" />
+                            <input name="Items[${itemIndex}].Unit" value="${data.meins}" class="form-control form-control-sm" readonly />
                         </td>
                         <td>
                             <input name="Items[${itemIndex}].Remark" class="form-control form-control-sm" />
@@ -180,7 +201,7 @@
             function reindexItems() {
                 $('#itemsContainer tr').each(function(index) {
                     $(this).attr('data-index', index);
-                    $(this).find('select, input').each(function() {
+                    $(this).find('input').each(function() {
                         var name = $(this).attr('name');
                         if (name) {
                             $(this).attr('name', name.replace(/Items\[\d+\]/, 'Items[' + index + ']'));

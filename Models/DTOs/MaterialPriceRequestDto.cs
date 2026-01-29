@@ -9,6 +9,7 @@ namespace NCRManagementSystem.Models.DTOs
         public int RequestBy { get; set; }
         public string RequestByName { get; set; } = string.Empty;
         public string? Department { get; set; }
+        public string? VendorEmail { get; set; }
         public string Status { get; set; } = string.Empty;
         public string? Remarks { get; set; }
         public DateTime? CompletedDate { get; set; }

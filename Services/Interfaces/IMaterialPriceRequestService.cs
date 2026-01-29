@@ -19,6 +19,7 @@ namespace NCRManagementSystem.Services.Interfaces
         Task<bool> CancelRequestAsync(int requestId, int userId);
         Task<string> GenerateRequestNumberAsync();
 
+
         // File operations
         Task<MaterialPriceRequestFileDto?> SaveFileAsync(IFormFile file, int itemId, int uploadedBy);
         Task<bool> DeleteFileAsync(int fileId);

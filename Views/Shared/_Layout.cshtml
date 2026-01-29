@@ -197,6 +197,24 @@
                         QA ตรวจสอบ
                     </a>
                 </li>
+                <div class="sidebar-heading">
+                    จัดซื้อ
+                </div>
+                <li class="nav-item">
+                    <a class="nav-link" asp-controller="PrPriceRequest" asp-action="Index">
+                        <i class="fas fa-fw fa-money-bill-wave"></i>
+                        <span>Request PR Price</span>
+                    </a>
+                </li>
+		
+                <!-- Nav Item - Material Price Request -->
+                <li class="nav-item">
+                    <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMpr"
+                       aria-expanded="true" aria-controls="collapseMpr">
+                        <i class="fas fa-fw fa-tags"></i>
+                        <span>ขอราคาวัตถุดิบ</span>
+                    </a>
+                </li>
             }
 
             @if (User.IsInRole("User"))

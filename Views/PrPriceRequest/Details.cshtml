@@ -1,0 +1,113 @@
+@model NCRManagementSystem.Models.ViewModels.PrPriceRequestDetailViewModel
+
+@{
+    ViewData["Title"] = "รายละเอียดใบขอราคา PR";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">รายละเอียดใบขอราคา PR: @Model.Request.PrNumber</h1>
+            <span class="badge @Model.Request.StatusBadgeClass">@Model.Request.StatusDisplay</span>
+        </div>
+        <div>
+            <a asp-action="Index" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> กลับ
+            </a>
+            @if (Model.CanUpdatePrice)
+            {
+                <a asp-action="UpdatePrice" asp-route-id="@Model.Request.RequestId" class="btn btn-info">
+                   <i class="fas fa-edit"></i> อัพเดตราคา
+                </a>
+            }
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">ข้อมูลทั่วไป</h6>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">วันที่ร้องขอ</dt>
+                <dd class="col-sm-9">@Model.Request.RequestDate.ToString("dd/MM/yyyy HH:mm")</dd>
+
+                <dt class="col-sm-3">ผู้ร้องขอ</dt>
+                <dd class="col-sm-9">@Model.Request.RequestByName</dd>
+
+                <dt class="col-sm-3">Vendor Email</dt>
+                <dd class="col-sm-9">@Model.Request.VendorEmail</dd>
+
+                <dt class="col-sm-3">ความคืบหน้า</dt>
+                <dd class="col-sm-9">
+                    ได้ราคาแล้ว @Model.Request.PricedItems / @Model.Request.TotalItems รายการ
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">รายการวัตถุดิบ</h6>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>รหัส</th>
+                            <th>ชื่อวัตถุดิบ</th>
+                            <th>จำนวน/หน่วย</th>
+                            <th>ราคาต่อหน่วย</th>
+                            <th>รวมเป็นเงิน</th>
+                            <th>Supplier</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Request.Items)
+                        {
+                            <tr>
+                                <td>@item.MaterialCode</td>
+                                <td>@item.MaterialName</td>
+                                <td>@item.Quantity @item.Unit</td>
+                                <td>
+                                    @if(item.UnitPrice.HasValue)
+                                    {
+                                        <span>@item.UnitPrice?.ToString("N2") @item.Currency</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if(item.UnitPrice.HasValue && item.Quantity.HasValue)
+                                    {
+                                        var total = item.UnitPrice.Value * item.Quantity.Value;
+                                        <span>@total.ToString("N2") @item.Currency</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </td>
+                                <td>@item.SupplierName</td>
+                                <td>
+                                    @if(item.Status == "Priced")
+                                    {
+                                        <span class="badge bg-success">ได้ราคาแล้ว</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">รอราคา</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

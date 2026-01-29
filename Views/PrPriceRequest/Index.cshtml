@@ -1,0 +1,108 @@
+@model NCRManagementSystem.Models.ViewModels.PrPriceRequestListViewModel
+
+@{
+    ViewData["Title"] = "รายการขอราคาจาก PR";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0 text-gray-800">รายการขอราคาจาก PR</h1>
+        <a asp-action="Create" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> สร้างรายการใหม่
+        </a>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">ค้นหาและกรองข้อมูล</h6>
+        </div>
+        <div class="card-body">
+            <form asp-action="Index" method="get" class="form-inline">
+                <div class="form-group mb-2 mr-2">
+                    <label for="search" class="sr-only">ค้นหา</label>
+                    <input type="text" class="form-control" name="search" value="@Model.SearchTerm" placeholder="เลขที่ PR..." />
+                </div>
+                <div class="form-group mb-2 mr-2">
+                    <label for="status" class="sr-only">สถานะ</label>
+                    <select class="form-control" name="status" asp-for="Status">
+                        <option value="">ทุกสถานะ</option>
+                        <option value="Pending">รอดำเนินการ</option>
+                        <option value="Priced">ได้ราคาแล้ว</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary mb-2">
+                    <i class="fas fa-search"></i> ค้นหา
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>เลขที่ PR</th>
+                            <th>วันที่ขอ</th>
+                            <th>ผู้ร้องขอ</th>
+                            <th>Vendor Email</th>
+                            <th>สถานะ</th>
+                            <th>จำนวนรายการ</th>
+                            <th>การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Requests != null && Model.Requests.Any())
+                        {
+                            foreach (var item in Model.Requests)
+                            {
+                                <tr>
+                                    <td>@item.PrNumber</td>
+                                    <td>@item.RequestDate.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>@item.RequestByName</td>
+                                    <td>@item.VendorEmail</td>
+                                    <td>
+                                        <span class="badge @item.StatusBadgeClass">@item.StatusDisplay</span>
+                                    </td>
+                                    <td>@item.TotalItems</td>
+                                    <td>
+                                        <a asp-action="Index" class="btn btn-info btn-sm">
+                                            <i class="fas fa-eye"></i> ดูรายละเอียด
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="7" class="text-center">ไม่พบข้อมูล</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination (Simplified) -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber - 1)" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.Status">ก่อนหน้า</a>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">หน้า @Model.PageNumber จาก @Model.TotalPages</span>
+                        </li>
+                        <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@(Model.PageNumber + 1)" asp-route-search="@Model.SearchTerm" asp-route-status="@Model.Status">ถัดไป</a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        </div>
+    </div>
+</div>

@@ -55,6 +55,8 @@ namespace NCRManagementSystem.Services.Implementations
             return await _repository.GenerateRequestNumberAsync();
         }
 
+
+
         public async Task<int> CreateRequestAsync(MaterialPriceRequestCreateViewModel model, int userId, string? department)
         {
             try
